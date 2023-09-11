@@ -20,6 +20,7 @@
 #include "ClientHandlerModel.hpp"
 
 #include "Logger.hpp"
+#include "MessageConfig.hpp"
 
 #include <boost/function.hpp>
 #include <boost/asio/buffer.hpp>
@@ -67,14 +68,15 @@ void ClientHandlerController::start_read(models::ClientConnection &client) {
     /* As we use async programming, the data should be destroyed at the end of the method.
        To escape the desctruction the buffer, we made this static + made optimization of method work :);
      */
-    static std::array<char, STANDART_BUFFER_SIZE> buf;
+    static std::vector<char> buf;
+    buf.resize(STANDART_BUFFER_SIZE);
     boost::system::error_code error;
 
-    boost::function<void(std::array<char, STANDART_BUFFER_SIZE>&, const uint64_t, const boost::system::error_code, models::ClientConnection)> read_handler
+    boost::function<void(std::vector<char>&, const uint64_t, const boost::system::error_code, models::ClientConnection)> read_handler
         = boost::bind(&ClientHandlerController::handle_read, this, _1, _2, _3, _4);
 
     // TODO: fix bug with buffer overloading!;
-    client.socket->async_read_some(boost::asio::buffer(buf), [read_handler, client](const boost::system::error_code &error, const uint64_t bytes_transferred){
+    client.socket->async_read_some(boost::asio::buffer(buf, STANDART_BUFFER_SIZE), [read_handler, client](const boost::system::error_code &error, const uint64_t bytes_transferred){
         read_handler(buf, bytes_transferred, error, client);
     });
 }
@@ -105,7 +107,7 @@ bool ClientHandlerController::handle_error(const boost::system::error_code &erro
     return true;
 }
 
-void ClientHandlerController::handle_read(std::array<char, STANDART_BUFFER_SIZE> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, models::ClientConnection client) {
+void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, models::ClientConnection client) {
     DECLARE_TAG_SCOPE;
     std::string transformed_data(std::begin(data), std::begin(data) + DATA_SIZE);
     LOG_INFO << "bytes count: " << DATA_SIZE << "; data: " << transformed_data;

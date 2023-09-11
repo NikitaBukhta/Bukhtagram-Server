@@ -78,6 +78,7 @@ endif()
 set(
     ALL_LIBS
     bukhta_logger
+    bukhtagram_messengercommon_config
     bukhtagram_mc_server_models
     ${Boost_LIBRARIES}
     ${WIN_LIBS}

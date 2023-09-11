@@ -70,7 +70,7 @@ void ServerController::accept_connection(void) {
     // boost::system::error_code error;
     auto acceptor = m_server_model->acceptor().lock();
     auto client_socket = std::make_shared<boost::asio::ip::tcp::socket>(*m_server_model->io_context().lock());
-    // TODO: find an idea how to use this method without try... catch block in main function);
+    
     acceptor->async_accept(*client_socket, boost::bind(
             &ServerController::handle_accept, this, client_socket, boost::asio::placeholders::error
         )
