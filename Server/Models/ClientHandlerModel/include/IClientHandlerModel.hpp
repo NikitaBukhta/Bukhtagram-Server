@@ -27,6 +27,7 @@
 #include <memory>
 #include <unordered_set>
 #include <string>
+#include <mutex>
 
 namespace bukhtagram {
 namespace ms {

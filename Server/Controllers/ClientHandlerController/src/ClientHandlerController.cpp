@@ -92,11 +92,11 @@ void ClientHandlerController::start_write(std::weak_ptr<models::ClientConnection
 
     LOG_INFO << "data size: " << recipient->message.size();
 
-    boost::function<void(const uint64_t, const boost::system::error_code&)> write_handler = boost::bind(&ClientHandlerController::handle_write, this, _1, _2);
+    boost::function<void(const uint64_t, const boost::system::error_code&, std::weak_ptr<models::ClientConnection>)> write_handler = boost::bind(&ClientHandlerController::handle_write, this, _1, _2, _3);
 
     recipient->socket->async_write_some(
-        boost::asio::buffer(recipient->message.data(), recipient->message.size()), [write_handler](const boost::system::error_code &error, const uint64_t bytes_transferred){
-            write_handler(bytes_transferred, error);
+        boost::asio::buffer(recipient->message.data(), recipient->message.size()), [write_handler, recipient](const boost::system::error_code &error, const uint64_t bytes_transferred){
+            write_handler(bytes_transferred, error, recipient);
     });
 }
 
@@ -116,6 +116,7 @@ void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_
     DECLARE_TAG_SCOPE;
 
     auto client = weak_client.lock();
+    handle_error(error);
 
     {   // Temp space starts;
         std::string transformed_data(std::begin(data), std::begin(data) + DATA_SIZE);
@@ -124,18 +125,19 @@ void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_
     }   // !Temp space ends;
 
     if (client->message.back() == message_config::MESSAGE_EOF) {
-        // TODO: IMPLEMENT SENDING MESSAGE TO CLIENT HERE;
-        LOG_WARNING << "IMPLEMENT SENDING MESSAGE TO CLIENT HERE";
+        start_write(client);
     }
 
-    handle_error(error);
-    start_write(client);
     start_read(client);
 }
 
-void ClientHandlerController::handle_write(const uint64_t DATA_SIZE, const boost::system::error_code &error) {
+void ClientHandlerController::handle_write(const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_recipient) {
     DECLARE_TAG_SCOPE;
     LOG_DEBUG << "counts bytes was sent:" << DATA_SIZE;
+
+    auto recipitient = weak_recipient.lock();
+    recipitient->message.erase(0, DATA_SIZE);
+
     handle_error(error);
 }
 

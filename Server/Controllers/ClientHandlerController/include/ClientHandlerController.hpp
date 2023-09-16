@@ -43,11 +43,11 @@ public:
 
 private:
     void start_read(std::weak_ptr<models::ClientConnection> weak_client);
-    void start_write(std::weak_ptr<models::ClientConnection> recipient);
+    void start_write(std::weak_ptr<models::ClientConnection> weak_recipient);
 
     bool handle_error(const boost::system::error_code &error);
     void handle_read(std::vector<char> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_client);
-    void handle_write(const uint64_t DATA_SIZE, const boost::system::error_code &error);
+    void handle_write(const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_recipient);
 
 private:
     std::shared_ptr<models::IClientHandlerModel> m_client_handler_model;
