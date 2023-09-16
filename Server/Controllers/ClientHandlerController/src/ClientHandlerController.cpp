@@ -90,7 +90,7 @@ void ClientHandlerController::start_write(std::weak_ptr<models::ClientConnection
 
     auto recipient = weak_recipient.lock();
 
-    LOG_INFO << "data size: " << recipient->message.size();
+    LOG_INFO << "data size: " << recipient->message.size() << "; data: " << recipient->message;
 
     boost::function<void(const uint64_t, const boost::system::error_code&, std::weak_ptr<models::ClientConnection>)> write_handler = boost::bind(&ClientHandlerController::handle_write, this, _1, _2, _3);
 
@@ -120,7 +120,7 @@ void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_
 
     {   // Temp space starts;
         std::string transformed_data(std::begin(data), std::begin(data) + DATA_SIZE);
-        LOG_INFO << "bytes count: " << DATA_SIZE << "; data: " << transformed_data;
+        LOG_DEBUG << "bytes count: " << DATA_SIZE << "; data: " << transformed_data;
         client->message.append(transformed_data);
     }   // !Temp space ends;
 
