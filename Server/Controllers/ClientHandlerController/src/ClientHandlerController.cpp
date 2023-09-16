@@ -46,10 +46,10 @@ void ClientHandlerController::run(void) {
 void ClientHandlerController::add(std::weak_ptr<boost::asio::ip::tcp::socket> client_socket) {
     DECLARE_TAG_SCOPE;
     
-    models::ClientConnection client_connection;
-    client_connection.socket = client_socket.lock();
+    auto client_connection = std::make_shared<models::ClientConnection>();
+    client_connection->socket = client_socket.lock();
 
-    if (m_client_handler_model->add(client_connection)) {
+    if (m_client_handler_model->add(*client_connection)) {
         LOG_INFO << "new client added to clients list";
         
         start_read(client_connection);
@@ -59,11 +59,13 @@ void ClientHandlerController::add(std::weak_ptr<boost::asio::ip::tcp::socket> cl
     }
 }
 
-void ClientHandlerController::start_read(models::ClientConnection &client) {
+void ClientHandlerController::start_read(std::weak_ptr<models::ClientConnection> weak_client) {
     using namespace boost::placeholders;
 
     DECLARE_TAG_SCOPE;
     LOG_INFO << "called";
+
+    auto client = weak_client.lock();
 
     /* As we use async programming, the data should be destroyed at the end of the method.
        To escape the desctruction the buffer, we made this static + made optimization of method work :);
@@ -72,25 +74,28 @@ void ClientHandlerController::start_read(models::ClientConnection &client) {
     buf.resize(message_config::BASE_BUFFER_SIZE);
     boost::system::error_code error;
 
-    boost::function<void(std::vector<char>&, const uint64_t, const boost::system::error_code, models::ClientConnection)> read_handler
+    boost::function<void(std::vector<char>&, const uint64_t, const boost::system::error_code, std::weak_ptr<models::ClientConnection>)> read_handler
         = boost::bind(&ClientHandlerController::handle_read, this, _1, _2, _3, _4);
 
     // TODO: fix bug with buffer overloading!;
-    client.socket->async_read_some(boost::asio::buffer(buf, message_config::BASE_BUFFER_SIZE), [read_handler, client](const boost::system::error_code &error, const uint64_t bytes_transferred){
+    client->socket->async_read_some(boost::asio::buffer(buf, message_config::BASE_BUFFER_SIZE), [read_handler, client](const boost::system::error_code &error, const uint64_t bytes_transferred){
         read_handler(buf, bytes_transferred, error, client);
     });
 }
 
-void ClientHandlerController::start_write(models::ClientConnection &recipient) {
+void ClientHandlerController::start_write(std::weak_ptr<models::ClientConnection> weak_recipient) {
     using namespace boost::placeholders;
 
     DECLARE_TAG_SCOPE;
-    LOG_INFO << "data size: " << recipient.message.size();
+
+    auto recipient = weak_recipient.lock();
+
+    LOG_INFO << "data size: " << recipient->message.size();
 
     boost::function<void(const uint64_t, const boost::system::error_code&)> write_handler = boost::bind(&ClientHandlerController::handle_write, this, _1, _2);
 
-    recipient.socket->async_write_some(
-        boost::asio::buffer(recipient.message.data(), recipient.message.size()), [write_handler](const boost::system::error_code &error, const uint64_t bytes_transferred){
+    recipient->socket->async_write_some(
+        boost::asio::buffer(recipient->message.data(), recipient->message.size()), [write_handler](const boost::system::error_code &error, const uint64_t bytes_transferred){
             write_handler(bytes_transferred, error);
     });
 }
@@ -107,16 +112,18 @@ bool ClientHandlerController::handle_error(const boost::system::error_code &erro
     return true;
 }
 
-void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, models::ClientConnection client) {
+void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_client) {
     DECLARE_TAG_SCOPE;
+
+    auto client = weak_client.lock();
 
     {   // Temp space starts;
         std::string transformed_data(std::begin(data), std::begin(data) + DATA_SIZE);
         LOG_INFO << "bytes count: " << DATA_SIZE << "; data: " << transformed_data;
-        client.message.append(transformed_data);
+        client->message.append(transformed_data);
     }   // !Temp space ends;
 
-    if (client.message.back() == message_config::MESSAGE_EOF) {
+    if (client->message.back() == message_config::MESSAGE_EOF) {
         // TODO: IMPLEMENT SENDING MESSAGE TO CLIENT HERE;
         LOG_WARNING << "IMPLEMENT SENDING MESSAGE TO CLIENT HERE";
     }
