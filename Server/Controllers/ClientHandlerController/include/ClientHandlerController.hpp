@@ -43,7 +43,7 @@ public:
 
 private:
     void start_read(models::ClientConnection &client);
-    void start_write(models::ClientConnection &recipient, const std::string &message);
+    void start_write(models::ClientConnection &recipient);
 
     bool handle_error(const boost::system::error_code &error);
     void handle_read(std::vector<char> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, models::ClientConnection client);

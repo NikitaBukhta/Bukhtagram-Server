@@ -26,6 +26,7 @@
 #include <functional>
 #include <memory>
 #include <unordered_set>
+#include <string>
 
 namespace bukhtagram {
 namespace ms {
@@ -34,6 +35,7 @@ namespace models {
 
 struct ClientConnection {
     std::shared_ptr<boost::asio::ip::tcp::socket> socket;
+    std::string message;
 
 public:
     ClientConnection(void) = default;
