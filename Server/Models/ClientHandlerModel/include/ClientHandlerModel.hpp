@@ -30,8 +30,10 @@ namespace models {
 
 class ClientHandlerModel : public IClientHandlerModel{
 public:
-    bool add(const ClientConnection &val);
-    bool add(ClientConnection &&val);
+    bool add(const ClientConnection &val) override;
+    bool add(ClientConnection &&val) override;
+    bool remove(const ClientConnection &val) override;
+    uint64_t size(void) const noexcept override;
 
     std::unordered_set<ClientConnection>::const_iterator begin(void) const;
     std::unordered_set<ClientConnection>::const_iterator end(void) const;

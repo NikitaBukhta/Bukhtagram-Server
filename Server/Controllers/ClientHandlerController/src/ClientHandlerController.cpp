@@ -38,6 +38,15 @@ ClientHandlerController::ClientHandlerController(std::weak_ptr<models::IClientHa
     LOG_INFO << "called";
 }
 
+ClientHandlerController::~ClientHandlerController(void) {
+    DECLARE_TAG_SCOPE;
+    LOG_INFO << "clients count = " << m_client_handler_model->size();
+    while (m_client_handler_model->size()) {
+        auto client = m_client_handler_model->begin();
+        disconnect(*client);
+    }
+}
+
 void ClientHandlerController::run(void) {
     DECLARE_TAG_SCOPE;
     LOG_INFO << "called";
@@ -56,6 +65,23 @@ void ClientHandlerController::add(std::weak_ptr<boost::asio::ip::tcp::socket> cl
 
     } else {
         LOG_WARNING << "Cannot to add client to clients list";
+    }
+}
+
+void ClientHandlerController::disconnect(const models::ClientConnection &client) {
+    DECLARE_TAG_SCOPE;
+
+    if (client.socket.get()) {
+        auto client_remote_endpoint = client.socket->remote_endpoint();
+        LOG_INFO << "Remove client ip:" << client_remote_endpoint.address().to_string() << "; port: " << client_remote_endpoint.port();
+        client.socket->close();
+        // client.socket.
+        if (!m_client_handler_model->remove(client)) {
+            LOG_ERROR << "Cannot to remove client from the server";
+        }
+        LOG_DEBUG << "Count clients are connected to the server: " << m_client_handler_model->size();
+    } else {
+        LOG_WARNING << "Client is not detected";
     }
 }
 
@@ -103,32 +129,55 @@ void ClientHandlerController::start_write(std::weak_ptr<models::ClientConnection
 bool ClientHandlerController::handle_error(const boost::system::error_code &error) {
     DECLARE_TAG_SCOPE;
 
-    if (error.value() == boost::system::errc::success) {
-        LOG_TRACE << "no errors handled";
-        return false;
+    bool ret = false;
+
+    if (error.value() != boost::system::errc::success) {
+        LOG_ERROR << "Error #" << error.value() << ": " << error.message();
+        ret = true;
     }
 
-    LOG_ERROR << error.what();
-    return true;
+    return ret;
+}
+
+bool ClientHandlerController::handle_error(const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_client) {
+    DECLARE_TAG_SCOPE;
+
+    bool ret = false;
+    
+    if (error == boost::asio::error::connection_reset) {
+        auto client = weak_client.lock();
+        if (client.get()) {
+            disconnect(*client);
+        }
+
+        ret = true;
+    } else {
+        ret = handle_error(error);
+    }
+
+    return ret;
 }
 
 void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_client) {
     DECLARE_TAG_SCOPE;
-
     auto client = weak_client.lock();
-    handle_error(error);
+    std::string transformed_data(std::begin(data), std::begin(data) + DATA_SIZE);
+    auto client_remote_endpoint = client->socket->remote_endpoint();
+        LOG_INFO << "Remove client ip:" << client_remote_endpoint.address().to_string() << "; port: " << client_remote_endpoint.port();
+    LOG_DEBUG << "Client ip:" << client_remote_endpoint.address().to_string() << "; port: " << client_remote_endpoint.port() 
+        << "; bytes count: " << DATA_SIZE << "; data: " << transformed_data;
 
-    {   // Temp space starts;
-        std::string transformed_data(std::begin(data), std::begin(data) + DATA_SIZE);
-        LOG_DEBUG << "bytes count: " << DATA_SIZE << "; data: " << transformed_data;
+    handle_error(error, client);
+
+    if (client->socket->is_open()) {
         client->message.append(transformed_data);
-    }   // !Temp space ends;
 
-    if (client->message.back() == message_config::MESSAGE_EOF) {
-        start_write(client);
+        if (client->message.back() == message_config::MESSAGE_EOF) {
+            start_write(client);
+        }
+
+        start_read(client);
     }
-
-    start_read(client);
 }
 
 void ClientHandlerController::handle_write(const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_recipient) {

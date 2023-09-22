@@ -69,6 +69,8 @@ class IClientHandlerModel {
 public:
     virtual bool add(const ClientConnection &val) = 0;
     virtual bool add(ClientConnection &&val) = 0;
+    virtual bool remove(const ClientConnection &val) = 0;
+    virtual uint64_t size(void) const noexcept = 0;
 
     virtual std::unordered_set<ClientConnection>::const_iterator begin(void) const = 0;
     virtual std::unordered_set<ClientConnection>::const_iterator end(void) const = 0;

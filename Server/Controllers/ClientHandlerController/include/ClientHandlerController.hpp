@@ -36,16 +36,18 @@ namespace controllers {
 class ClientHandlerController : public IClientHandlerController {
 public:
     ClientHandlerController(std::weak_ptr<models::IClientHandlerModel> client_handler_model);
-    virtual ~ClientHandlerController(void) = default;
+    virtual ~ClientHandlerController(void);
 
     void run(void) override;
     void add(std::weak_ptr<boost::asio::ip::tcp::socket> client_socket) override;
+    void disconnect(const models::ClientConnection &client);
 
 private:
     void start_read(std::weak_ptr<models::ClientConnection> weak_client);
     void start_write(std::weak_ptr<models::ClientConnection> weak_recipient);
 
     bool handle_error(const boost::system::error_code &error);
+    bool handle_error(const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_client);
     void handle_read(std::vector<char> &data, const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_client);
     void handle_write(const uint64_t DATA_SIZE, const boost::system::error_code &error, std::weak_ptr<models::ClientConnection> weak_recipient);
 

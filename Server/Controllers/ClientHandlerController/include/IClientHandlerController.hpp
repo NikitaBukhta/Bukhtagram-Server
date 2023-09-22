@@ -19,6 +19,8 @@
 #ifndef BUKHTAGRAM_MESSENGERSERVER_SERVER_CONTROLLERS_ICLIENTHANDLERCONTROLLER_HPP
 #define BUKHTAGRAM_MESSENGERSERVER_SERVER_CONTROLLERS_ICLIENTHANDLERCONTROLLER_HPP
 
+#include "IClientHandlerModel.hpp"
+
 #include <boost/asio/ip/tcp.hpp>
 
 #include <memory>
@@ -32,6 +34,7 @@ class IClientHandlerController {
 public:
     virtual void run(void) = 0;
     virtual void add(std::weak_ptr<boost::asio::ip::tcp::socket> client_socket) = 0;
+    virtual void disconnect(const models::ClientConnection &client) = 0;
 };
 
 }   // !controllers;

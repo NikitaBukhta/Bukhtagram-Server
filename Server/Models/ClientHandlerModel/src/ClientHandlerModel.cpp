@@ -35,6 +35,14 @@ bool ClientHandlerModel::add(ClientConnection &&val) {
     return m_client_connection_set.insert(std::move(val)).second;
 }
 
+bool ClientHandlerModel::remove(const ClientConnection &val) {
+    return m_client_connection_set.erase(val);
+}
+
+uint64_t ClientHandlerModel::size(void) const noexcept{
+    return m_client_connection_set.size();
+}
+
 std::unordered_set<ClientConnection>::const_iterator ClientHandlerModel::begin(void) const {
     return std::begin(m_client_connection_set);
 }
