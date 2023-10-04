@@ -95,7 +95,7 @@ bool ServerController::handle_error(const boost::system::error_code &error) {
         return false;
     }
 
-    LOG_ERROR << error.what();
+    LOG_ERROR << error.message();
     return true;
 }
 

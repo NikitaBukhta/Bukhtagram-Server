@@ -144,7 +144,7 @@ bool ClientHandlerController::handle_error(const boost::system::error_code &erro
 
     bool ret = false;
     
-    if (error == boost::asio::error::connection_reset) {
+    if (error == boost::asio::error::connection_reset || error.value() == boost::asio::error::eof) {
         auto client = weak_client.lock();
         if (client.get()) {
             disconnect(*client);
@@ -163,7 +163,7 @@ void ClientHandlerController::handle_read(std::vector<char> &data, const uint64_
     auto client = weak_client.lock();
     std::string transformed_data(std::begin(data), std::begin(data) + DATA_SIZE);
     auto client_remote_endpoint = client->socket->remote_endpoint();
-        LOG_INFO << "Remove client ip:" << client_remote_endpoint.address().to_string() << "; port: " << client_remote_endpoint.port();
+        LOG_INFO << "Remote client ip:" << client_remote_endpoint.address().to_string() << "; port: " << client_remote_endpoint.port();
     LOG_DEBUG << "Client ip:" << client_remote_endpoint.address().to_string() << "; port: " << client_remote_endpoint.port() 
         << "; bytes count: " << DATA_SIZE << "; data: " << transformed_data;
 

@@ -1,6 +1,6 @@
 #----------------------------- CONFIGURE CMAKE -----------------------------#
 
-cmake_minimum_required(VERSION 3.25.1)
+cmake_minimum_required(VERSION 3.6.0)
 set(PROJECT_NAME bukhtagram_mc_server_models)
 project(${PROJECT_NAME})
 
